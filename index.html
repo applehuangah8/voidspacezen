@@ -595,26 +595,29 @@ const audio = document.getElementById("bell-audio");
 
 function playBell() {
   audio.currentTime = 0;
-  audio.volume = 0; // 從0開始（漸入）
+  audio.volume = 0;
   audio.play();
 
-  // 🔼 漸入（前2秒）
-  const fadeInDuration = 2000;
-  const fadeSteps = 20;
-  const fadeInStepTime = fadeInDuration / fadeSteps;
+  // 🌿 更柔順的漸入（3秒）
+  const fadeInDuration = 3000;
+  const steps = 30;
+  const stepTime = fadeInDuration / steps;
 
-  let fadeInStep = 0;
+  let step = 0;
 
   const fadeIn = setInterval(() => {
-    fadeInStep++;
-    audio.volume = Math.min(1, fadeInStep / fadeSteps);
+    step++;
 
-    if (fadeInStep >= fadeSteps) {
+    // 👉 使用 ease-in 曲線（更自然）
+    const progress = step / steps;
+    audio.volume = Math.pow(progress, 2); // 重點在這
+
+    if (step >= steps) {
       clearInterval(fadeIn);
     }
-  }, fadeInStepTime);
+  }, stepTime);
 
-  // 🔽 在第15秒開始漸出（總長17秒）
+  // 🌙 第18秒開始漸出（總長20秒）
   setTimeout(() => {
     const fadeOutDuration = 2000;
     const fadeOutSteps = 20;
@@ -624,7 +627,9 @@ function playBell() {
 
     const fadeOut = setInterval(() => {
       fadeOutStep++;
-      audio.volume = Math.max(0, 1 - fadeOutStep / fadeOutSteps);
+
+      const progress = fadeOutStep / fadeOutSteps;
+      audio.volume = Math.pow(1 - progress, 2); // 也用柔順曲線
 
       if (fadeOutStep >= fadeOutSteps) {
         clearInterval(fadeOut);
@@ -633,7 +638,7 @@ function playBell() {
       }
     }, fadeOutStepTime);
 
-  }, 15000); // 15秒後開始fade out
+  }, 18000); // 18秒後開始fade out
 }
 
 // ──────────────────────────────────────────
