@@ -521,8 +521,43 @@
 </div>
 
 <!-- ════ AUDIO ════ -->
-<audio id="bell-audio" preload="auto"></audio>
+<audio id="bell-audio" 
+       preload="auto" 
+       loop 
+       src="endcycle.mp3">
+</audio>
+<audio id="bell-audio" 
+       preload="auto" 
+       loop 
+       src="endcycle.mp3">
+</audio>
+  //測試改聲音
+<script>
+  const audio = document.getElementById('bell-audio');
 
+  // 監聽播放時間，處理 6-8 秒的漸出
+  audio.addEventListener('timeupdate', function() {
+    const fadeStart = 6; // 第 6 秒開始縮小音量
+    const stopTime = 8;  // 第 8 秒強制停止
+
+    if (audio.currentTime >= fadeStart) {
+      // 計算 6 到 8 秒之間的線性音量 (從 1.0 降到 0.0)
+      let volume = (stopTime - audio.currentTime) / (stopTime - fadeStart);
+      
+      if (volume <= 0) {
+        audio.volume = 0;
+        audio.pause();
+        // 保持在 8 秒的位置，不重設播放進度
+      } else {
+        // 確保音量值在有效範圍 [0, 1] 內
+        audio.volume = Math.min(1, Math.max(0, volume));
+      }
+    }
+  });
+
+  // 提示：你可以在需要啟動靜心時，透過 audio.play() 觸發這段邏輯
+</script>
+  
 <script>
 // ──────────────────────────────────────────
 //  State
