@@ -589,26 +589,33 @@ function updateSliderFill(el) {
 }
 updateSliderFill(document.getElementById('custom-slider'));
 
-// ──────────────────────────────────────────
-//  Bell sound (Web Audio API — sine tone)
-// ──────────────────────────────────────────
-function playBell() {
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const now = ctx.currentTime;
-  const totalDuration = 6;
+const audio = document.getElementById("bell-audio");
 
-  // Three harmonics for a singing bowl feel
-  [[220, 0.5], [440, 0.3], [660, 0.15]].forEach(([freq, gain]) => {
-    const osc = ctx.createOscillator();
-    const env = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = freq;
-    env.gain.setValueAtTime(0, now);
-    env.gain.linearRampToValueAtTime(gain * 0.6, now + 0.08);
-    env.gain.exponentialRampToValueAtTime(0.001, now + totalDuration);
-    osc.connect(env); env.connect(ctx.destination);
-    osc.start(now); osc.stop(now + totalDuration);
-  });
+function playBell() {
+  audio.currentTime = 0;
+  audio.volume = 1;
+  audio.play();
+
+  // 第5秒開始漸出（7秒結束）
+  setTimeout(() => {
+    const fadeDuration = 2000;
+    const fadeSteps = 20;
+    const stepTime = fadeDuration / fadeSteps;
+
+    let step = 0;
+
+    const fade = setInterval(() => {
+      step++;
+      audio.volume = Math.max(0, 1 - step / fadeSteps);
+
+      if (step >= fadeSteps) {
+        clearInterval(fade);
+        audio.pause();
+        audio.currentTime = 0;
+      }
+    }, stepTime);
+
+  }, 5000);
 }
 
 // ──────────────────────────────────────────
