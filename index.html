@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#1a1a2e" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="靜心" />
-  <title>靜心 · Serenity</title>
+  <meta name="apple-mobile-web-app-title" content="靜坐" />
+  <title>靜坐 · Serenity</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -425,7 +425,7 @@
 <!-- ════ PAGE: HOME ════ -->
 <div class="page active" id="page-home">
   <div class="topbar">
-    <span class="topbar-title">靜心 · Serenity</span>
+    <span class="topbar-title">靜坐 · Serenity</span>
     <button class="icon-btn" onclick="showPage('page-history')" title="紀錄">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
@@ -470,11 +470,11 @@
 <!-- ════ PAGE: SESSION ════ -->
 <div class="page" id="page-session">
   <div class="topbar">
-    <span class="topbar-title">靜心進行中</span>
+    <span class="topbar-title">靜心中</span>
   </div>
 
   <div class="hero">
-    <div class="session-status" id="session-status">靜下來，專注於當下</div>
+    <div class="session-status" id="session-status">專注呼吸</div>
 
     <div class="ring-wrap breathing" id="session-ring">
       <svg class="ring-svg" viewBox="0 0 220 220">
@@ -660,11 +660,11 @@ function tick() {
   // Status hints based on real progress
   const pct = elapsed / sessionTargetSec;
   const status = document.getElementById('session-status');
-  if (pct < 0.1)       status.textContent = '靜下來，專注於當下';
-  else if (pct < 0.4)  status.textContent = '跟隨你的呼吸';
-  else if (pct < 0.7)  status.textContent = '保持靜定';
-  else if (pct < 0.9)  status.textContent = '即將完成';
-  else                  status.textContent = '最後時刻，輕輕覺知';
+  if (pct < 0.1)       status.textContent = '靜下來，回到呼吸';
+  else if (pct < 0.4)  status.textContent = '專注呼吸';
+  else if (pct < 0.7)  status.textContent = '把心收回來';
+  else if (pct < 0.9)  status.textContent = '靜心中';
+  else                  status.textContent = '最後時刻，動一動';
 
   if (remaining <= 0 && !sessionCompleted) {
     sessionCompleted = true;
@@ -839,8 +839,10 @@ function renderTracker(year, month) {
 
   const emptyBlock = log.length === 0 ? `
     <div class="tracker-empty">
-      <div class="tracker-empty-icon">🪷</div>
-      完成第一次靜坐後<br>紀錄將蓋章於此
+     <div class="empty-icon">
+  <img src="meditation.png" style="width:360px; height:160px; object-fit:contain; opacity:0.6;" />
+</div>
+      完成靜坐後<br>紀錄將蓋章於此
     </div>` : '';
 
   card.innerHTML = `
