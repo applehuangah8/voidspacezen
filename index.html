@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#1a1a2e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="靜心" />
+  <title>靜心 · Serenity</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg:        #0f0f1a;
+      --bg2:       #161625;
+      --surface:   #1e1e32;
+      --amber:     #c9903a;
+      --amber-dim: #7a5520;
+      --amber-glow:rgba(201,144,58,0.15);
+      --text:      #e8e0d0;
+      --text-dim:  #8a8070;
+      --text-faint:#3a3530;
+      --radius:    18px;
+      --transition: 0.4s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Noto Serif TC', serif;
+      overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    /* ── Grain overlay ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    /* ── Ambient glow ── */
+    .glow-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+      transition: opacity 2s ease;
+    }
+    .glow-orb.top    { width: 320px; height: 320px; top: -80px; left: 50%; transform: translateX(-50%); background: radial-gradient(circle, rgba(201,144,58,0.12) 0%, transparent 70%); }
+    .glow-orb.bottom { width: 240px; height: 240px; bottom: -60px; right: 10%; background: radial-gradient(circle, rgba(80,80,160,0.1) 0%, transparent 70%); }
+
+    /* ── App shell ── */
+    #app {
+      position: relative; z-index: 1;
+      height: 100dvh;
+      display: flex; flex-direction: column;
+      max-width: 420px; margin: 0 auto;
+      padding: env(safe-area-inset-top, 16px) 24px env(safe-area-inset-bottom, 24px);
+    }
+
+    /* ── Page system ── */
+    .page {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      padding: env(safe-area-inset-top, 16px) 24px env(safe-area-inset-bottom, 24px);
+      max-width: 420px; margin: 0 auto;
+      opacity: 0; pointer-events: none;
+      transform: translateY(12px);
+      transition: opacity var(--transition), transform var(--transition);
+    }
+    .page.active {
+      opacity: 1; pointer-events: all;
+      transform: translateY(0);
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 0 8px;
+      flex-shrink: 0;
+    }
+    .topbar-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 13px; font-style: italic;
+      letter-spacing: 0.12em;
+      color: var(--text-dim);
+    }
+    .icon-btn {
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      border: none; background: none; cursor: pointer;
+      color: var(--text-dim);
+      border-radius: 50%;
+      transition: color 0.2s, background 0.2s;
+    }
+    .icon-btn:hover { color: var(--text); background: var(--surface); }
+    .icon-btn svg { width: 20px; height: 20px; }
+
+    /* ── Hero section ── */
+    .hero {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 0;
+    }
+
+    .hero-label {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 11px; letter-spacing: 0.3em;
+      text-transform: uppercase; color: var(--text-dim);
+      margin-bottom: 24px;
+    }
+
+    /* ── Breathing ring ── */
+    .ring-wrap {
+      position: relative;
+      width: 220px; height: 220px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 32px;
+    }
+    .ring-svg {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      transform: rotate(-90deg);
+    }
+    .ring-track {
+      fill: none;
+      stroke: var(--text-faint);
+      stroke-width: 1.5;
+    }
+    .ring-progress {
+      fill: none;
+      stroke: var(--amber);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-dasharray: 628;
+      stroke-dashoffset: 628;
+      transition: stroke-dashoffset 1s linear;
+      filter: drop-shadow(0 0 6px rgba(201,144,58,0.5));
+    }
+    .ring-center {
+      position: relative; z-index: 1;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 2px;
+    }
+    .timer-display {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 52px; font-weight: 300;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      line-height: 1;
+    }
+    .timer-unit {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 11px; letter-spacing: 0.25em;
+      color: var(--text-dim);
+    }
+
+    /* breathing pulse on ring-wrap */
+    @keyframes breathe {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50%       { transform: scale(1.04); opacity: 0.85; }
+    }
+    .ring-wrap.breathing { animation: breathe 5s ease-in-out infinite; }
+
+    /* ── Duration selector ── */
+    .duration-row {
+      display: flex; gap: 10px;
+      margin-bottom: 12px;
+    }
+    .dur-chip {
+      flex: 1;
+      padding: 12px 0;
+      border: 1px solid var(--text-faint);
+      border-radius: 40px;
+      background: none;
+      color: var(--text-dim);
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 16px; letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .dur-chip:hover { border-color: var(--amber-dim); color: var(--text); }
+    .dur-chip.selected {
+      border-color: var(--amber);
+      color: var(--amber);
+      background: var(--amber-glow);
+    }
+
+    .custom-row {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 32px;
+    }
+    .custom-label {
+      font-size: 12px; color: var(--text-dim);
+      letter-spacing: 0.1em; white-space: nowrap;
+    }
+    input[type="range"] {
+      -webkit-appearance: none;
+      flex: 1; height: 2px;
+      background: linear-gradient(to right, var(--amber) var(--pct, 0%), var(--text-faint) var(--pct, 0%));
+      border-radius: 2px; outline: none; cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--amber);
+      box-shadow: 0 0 8px rgba(201,144,58,0.5);
+    }
+    .custom-val {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px; color: var(--amber);
+      min-width: 40px; text-align: right;
+    }
+
+    /* ── Main CTA ── */
+    .btn-start {
+      width: 100%;
+      padding: 18px;
+      border: none; border-radius: var(--radius);
+      background: linear-gradient(135deg, #c9903a 0%, #a06d24 100%);
+      color: #0f0f1a;
+      font-family: 'Noto Serif TC', serif;
+      font-size: 16px; font-weight: 400;
+      letter-spacing: 0.15em;
+      cursor: pointer;
+      box-shadow: 0 4px 24px rgba(201,144,58,0.3);
+      transition: all 0.25s ease;
+      position: relative; overflow: hidden;
+    }
+    .btn-start::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: rgba(255,255,255,0);
+      transition: background 0.2s;
+    }
+    .btn-start:hover::after { background: rgba(255,255,255,0.08); }
+    .btn-start:active { transform: scale(0.98); }
+
+    /* ── Session page ── */
+    .session-status {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 13px; font-style: italic;
+      letter-spacing: 0.2em; color: var(--text-dim);
+      text-align: center; margin-bottom: 8px;
+    }
+
+    .btn-end {
+      width: 100%;
+      padding: 16px;
+      border: 1px solid var(--text-faint);
+      border-radius: var(--radius);
+      background: none;
+      color: var(--text-dim);
+      font-family: 'Noto Serif TC', serif;
+      font-size: 14px; letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .btn-end:hover { border-color: var(--amber-dim); color: var(--text); }
+
+    /* ── Completion overlay ── */
+    #completion-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: var(--bg);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 16px;
+      opacity: 0; pointer-events: none;
+      transition: opacity 1s ease;
+    }
+    #completion-overlay.show {
+      opacity: 1; pointer-events: all;
+    }
+    .completion-kanji {
+      font-size: 64px; line-height: 1;
+      animation: fadeUp 1s ease 0.3s both;
+    }
+    .completion-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px; font-weight: 300;
+      letter-spacing: 0.1em;
+      animation: fadeUp 1s ease 0.5s both;
+    }
+    .completion-sub {
+      font-size: 13px; color: var(--text-dim);
+      letter-spacing: 0.15em;
+      animation: fadeUp 1s ease 0.7s both;
+    }
+    .completion-duration {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 48px; color: var(--amber);
+      animation: fadeUp 1s ease 0.9s both;
+    }
+    .completion-unit {
+      font-size: 12px; color: var(--text-dim);
+      letter-spacing: 0.2em; margin-top: -8px;
+      animation: fadeUp 1s ease 1s both;
+    }
+    .btn-complete {
+      margin-top: 24px;
+      padding: 16px 48px;
+      border: 1px solid var(--amber-dim);
+      border-radius: 40px;
+      background: none; color: var(--amber);
+      font-family: 'Noto Serif TC', serif;
+      font-size: 14px; letter-spacing: 0.15em;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      animation: fadeUp 1s ease 1.2s both;
+    }
+    .btn-complete:hover { background: var(--amber-glow); border-color: var(--amber); }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ══════════════════════════════════════
+       HABIT TRACKER — warm paper theme
+       ══════════════════════════════════════ */
+    .history-scroll {
+      flex: 1; overflow-y: auto;
+      padding-bottom: 24px;
+    }
+    .history-scroll::-webkit-scrollbar { display: none; }
+
+    /* Paper card */
+    .tracker-card {
+      background: linear-gradient(160deg, #f7f0e3 0%, #ede4d0 60%, #e5d9c0 100%);
+      border-radius: 20px;
+      padding: 20px 16px 24px;
+      position: relative; overflow: hidden;
+      box-shadow: 0 2px 0 rgba(255,255,255,0.6) inset, 0 8px 32px rgba(0,0,0,0.35);
+    }
+    .tracker-card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 300 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)' opacity='0.05'/%3E%3C/svg%3E");
+      background-size: 300px 300px; border-radius: 20px;
+      pointer-events: none; z-index: 0;
+    }
+    .tracker-card > * { position: relative; z-index: 1; }
+
+    .tracker-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+    .tracker-en { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 10px; letter-spacing: 0.25em; color: #9a7d5a; text-transform: uppercase; }
+    .tracker-zh { font-family: 'Noto Serif TC', serif; font-size: 20px; color: #4a3520; margin-top: 2px; }
+
+    .tracker-month-nav { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+    .month-nav-btn {
+      width: 26px; height: 26px; border: 1px solid #c8b090; border-radius: 50%;
+      background: rgba(255,255,255,0.4); color: #7a5a30; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 12px;
+      transition: background 0.2s;
+    }
+    .month-nav-btn:hover { background: rgba(255,255,255,0.7); }
+    .tracker-month-label { font-family: 'Cormorant Garamond', serif; font-size: 14px; color: #5a3e20; letter-spacing: 0.08em; min-width: 72px; text-align: center; }
+
+    .tracker-stats { display: flex; gap: 8px; margin-bottom: 14px; }
+    .stat-pill { flex: 1; background: rgba(255,255,255,0.45); border: 1px solid rgba(180,140,90,0.3); border-radius: 12px; padding: 7px 8px; text-align: center; }
+    .stat-num { font-family: 'Cormorant Garamond', serif; font-size: 20px; color: #8b5e20; line-height: 1; }
+    .stat-lbl { font-size: 9px; color: #9a7d5a; letter-spacing: 0.12em; margin-top: 2px; }
+
+    .cal-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 4px; }
+    .cal-wd { text-align: center; font-size: 9px; letter-spacing: 0.08em; color: #9a7d5a; padding: 2px 0; }
+    .cal-wd.sun { color: #b05050; }
+    .cal-wd.sat { color: #5070a0; }
+
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+    .cal-cell {
+      aspect-ratio: 1; border-radius: 50%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      position: relative; cursor: default;
+    }
+    .cal-day-num { font-family: 'Cormorant Garamond', serif; font-size: 13px; color: #6a5040; line-height: 1; }
+    .cal-cell.today .cal-day-num { color: #8b5e20; font-weight: 600; }
+    .cal-cell.today::after { content: ''; position: absolute; bottom: 2px; width: 3px; height: 3px; border-radius: 50%; background: #c9903a; }
+    .cal-cell.sun .cal-day-num { color: #b07060; }
+    .cal-cell.sat .cal-day-num { color: #7080b0; }
+
+    .cal-cell.done {
+      background: radial-gradient(circle at 40% 35%, rgba(201,144,58,0.25), rgba(160,100,20,0.12));
+      border: 1.5px solid rgba(180,120,40,0.5);
+    }
+    .cal-cell.done .cal-day-num { font-size: 8px; color: #9a7030; margin-bottom: 0px; }
+    .cal-min-stamp { font-family: 'Cormorant Garamond', serif; font-size: 13px; color: #7a4e10; line-height: 1; }
+    .cal-min-unit { font-size: 7px; color: #b08040; }
+
+    @keyframes stampIn {
+      0%   { transform: scale(1.4); opacity: 0; }
+      65%  { transform: scale(0.92); opacity: 1; }
+      100% { transform: scale(1); }
+    }
+    .cal-cell.done.just-stamped { animation: stampIn 0.32s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+    .tracker-footer { margin-top: 14px; display: flex; align-items: center; justify-content: space-between; }
+    .streak-badge { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.4); border: 1px solid rgba(180,140,90,0.3); border-radius: 20px; padding: 6px 12px; }
+    .streak-fire { font-size: 15px; }
+    .streak-text { font-family: 'Cormorant Garamond', serif; font-size: 14px; color: #7a4e10; }
+    .streak-sub { font-size: 8px; color: #9a7d5a; letter-spacing: 0.1em; }
+    .tracker-quote { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 10px; color: #a08060; max-width: 110px; text-align: right; line-height: 1.5; }
+
+    .tracker-empty { text-align: center; padding: 28px 0 12px; color: #9a7d5a; font-size: 12px; line-height: 2; }
+    .tracker-empty-icon { font-size: 30px; margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+
+<div class="glow-orb top"></div>
+<div class="glow-orb bottom"></div>
+
+<!-- ════ PAGE: HOME ════ -->
+<div class="page active" id="page-home">
+  <div class="topbar">
+    <span class="topbar-title">靜心 · Serenity</span>
+    <button class="icon-btn" onclick="showPage('page-history')" title="紀錄">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+        <rect x="9" y="3" width="6" height="4" rx="1"/>
+        <path d="M9 12h6M9 16h4"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="hero">
+    <div class="hero-label">選擇時長</div>
+
+    <div class="ring-wrap" id="home-ring">
+      <svg class="ring-svg" viewBox="0 0 220 220">
+        <circle class="ring-track" cx="110" cy="110" r="100"/>
+        <circle class="ring-progress" id="home-ring-prog" cx="110" cy="110" r="100"/>
+      </svg>
+      <div class="ring-center">
+        <div class="timer-display" id="home-timer-display">30</div>
+        <div class="timer-unit">分鐘</div>
+      </div>
+    </div>
+
+    <div class="duration-row">
+      <button class="dur-chip selected" data-min="20" onclick="selectDuration(20,this)">20</button>
+      <button class="dur-chip" data-min="30" onclick="selectDuration(30,this)">30</button>
+      <button class="dur-chip" data-min="40" onclick="selectDuration(40,this)">40</button>
+      <button class="dur-chip" data-min="60" onclick="selectDuration(60,this)">60</button>
+    </div>
+
+    <div class="custom-row">
+      <span class="custom-label">自訂</span>
+      <input type="range" id="custom-slider" min="5" max="120" value="20" step="5"
+             oninput="onSlider(this)" />
+      <span class="custom-val" id="custom-val-label">20 分</span>
+    </div>
+
+    <button class="btn-start" onclick="startSession()">開始靜坐</button>
+  </div>
+</div>
+
+<!-- ════ PAGE: SESSION ════ -->
+<div class="page" id="page-session">
+  <div class="topbar">
+    <span class="topbar-title">靜心進行中</span>
+  </div>
+
+  <div class="hero">
+    <div class="session-status" id="session-status">靜下來，專注於當下</div>
+
+    <div class="ring-wrap breathing" id="session-ring">
+      <svg class="ring-svg" viewBox="0 0 220 220">
+        <circle class="ring-track" cx="110" cy="110" r="100"/>
+        <circle class="ring-progress" id="session-ring-prog" cx="110" cy="110" r="100"/>
+      </svg>
+      <div class="ring-center">
+        <div class="timer-display" id="session-display">00:00</div>
+        <div class="timer-unit">剩餘時間</div>
+      </div>
+    </div>
+
+    <button class="btn-end" onclick="endSessionEarly()">提早結束</button>
+  </div>
+</div>
+
+<!-- ════ PAGE: HISTORY ════ -->
+<div class="page" id="page-history">
+  <div class="topbar">
+    <button class="icon-btn" onclick="showPage('page-home')" title="返回">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5M12 5l-7 7 7 7"/>
+      </svg>
+    </button>
+    <span class="topbar-title">習慣追蹤</span>
+    <div style="width:36px"></div>
+  </div>
+
+  <div class="history-scroll">
+    <div class="tracker-card" id="tracker-card">
+      <!-- rendered by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ════ COMPLETION OVERLAY ════ -->
+<div id="completion-overlay">
+  <div class="completion-kanji">🔔</div>
+  <div class="completion-title">靜坐完成</div>
+  <div class="completion-sub">Session Complete</div>
+  <div class="completion-duration" id="comp-dur">—</div>
+  <div class="completion-unit">分鐘</div>
+  <button class="btn-complete" onclick="confirmComplete()">記錄此次靜坐</button>
+</div>
+
+<!-- ════ AUDIO ════ -->
+<audio id="bell-audio" preload="auto"></audio>
+
+<script>
+// ──────────────────────────────────────────
+//  State
+// ──────────────────────────────────────────
+let selectedMin = 20;
+let timerInterval = null;
+let wakeLock = null;
+let sessionStartTime = null;
+let sessionTargetSec = 0;
+let sessionCompleted = false;
+
+// ──────────────────────────────────────────
+//  Persistence
+// ──────────────────────────────────────────
+function loadLog() {
+  try { return JSON.parse(localStorage.getItem('serenity_log') || '[]'); }
+  catch { return []; }
+}
+function saveLog(log) {
+  localStorage.setItem('serenity_log', JSON.stringify(log));
+}
+function appendLog(entry) {
+  const log = loadLog();
+  log.unshift(entry);
+  saveLog(log);
+}
+
+// ──────────────────────────────────────────
+//  Navigation
+// ──────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'page-history') renderHistory();
+}
+
+// ──────────────────────────────────────────
+//  Duration selection
+// ──────────────────────────────────────────
+function selectDuration(min, el) {
+  selectedMin = min;
+  document.querySelectorAll('.dur-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('home-timer-display').textContent = min;
+  document.getElementById('custom-slider').value = min;
+  updateSliderFill(document.getElementById('custom-slider'));
+  document.getElementById('custom-val-label').textContent = min + ' 分';
+}
+
+function onSlider(el) {
+  const min = parseInt(el.value);
+  selectedMin = min;
+  document.getElementById('custom-val-label').textContent = min + ' 分';
+  document.getElementById('home-timer-display').textContent = min;
+  document.querySelectorAll('.dur-chip').forEach(c => {
+    c.classList.toggle('selected', parseInt(c.dataset.min) === min);
+  });
+  updateSliderFill(el);
+}
+
+function updateSliderFill(el) {
+  const pct = ((el.value - el.min) / (el.max - el.min)) * 100;
+  el.style.setProperty('--pct', pct + '%');
+}
+updateSliderFill(document.getElementById('custom-slider'));
+
+// ──────────────────────────────────────────
+//  Bell sound (Web Audio API — sine tone)
+// ──────────────────────────────────────────
+function playBell() {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const now = ctx.currentTime;
+  const totalDuration = 6;
+
+  // Three harmonics for a singing bowl feel
+  [[220, 0.5], [440, 0.3], [660, 0.15]].forEach(([freq, gain]) => {
+    const osc = ctx.createOscillator();
+    const env = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    env.gain.setValueAtTime(0, now);
+    env.gain.linearRampToValueAtTime(gain * 0.6, now + 0.08);
+    env.gain.exponentialRampToValueAtTime(0.001, now + totalDuration);
+    osc.connect(env); env.connect(ctx.destination);
+    osc.start(now); osc.stop(now + totalDuration);
+  });
+}
+
+// ──────────────────────────────────────────
+//  Wake Lock
+// ──────────────────────────────────────────
+async function requestWakeLock() {
+  if ('wakeLock' in navigator) {
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+    } catch (e) { /* ignore */ }
+  }
+}
+function releaseWakeLock() {
+  if (wakeLock) { wakeLock.release(); wakeLock = null; }
+}
+
+// ──────────────────────────────────────────
+//  Session — real-clock based (background safe)
+// ──────────────────────────────────────────
+function startSession() {
+  sessionTargetSec = selectedMin * 60;
+  sessionCompleted = false;
+  sessionStartTime = new Date();
+
+  // Persist start time so we survive page reload
+  localStorage.setItem('serenity_session', JSON.stringify({
+    startISO: sessionStartTime.toISOString(),
+    targetSec: sessionTargetSec
+  }));
+
+  updateSessionRing(0);
+  updateSessionDisplay(sessionTargetSec);
+
+  showPage('page-session');
+  requestWakeLock();
+
+  timerInterval = setInterval(tick, 500); // 500ms for snappy updates
+}
+
+function tick() {
+  if (!sessionStartTime) return;
+
+  const elapsed  = (Date.now() - sessionStartTime.getTime()) / 1000;
+  const remaining = sessionTargetSec - elapsed;
+
+  updateSessionDisplay(Math.ceil(remaining));
+  updateSessionRing(elapsed / sessionTargetSec);
+
+  // Status hints based on real progress
+  const pct = elapsed / sessionTargetSec;
+  const status = document.getElementById('session-status');
+  if (pct < 0.1)       status.textContent = '靜下來，專注於當下';
+  else if (pct < 0.4)  status.textContent = '跟隨你的呼吸';
+  else if (pct < 0.7)  status.textContent = '保持靜定';
+  else if (pct < 0.9)  status.textContent = '即將完成';
+  else                  status.textContent = '最後時刻，輕輕覺知';
+
+  if (remaining <= 0 && !sessionCompleted) {
+    sessionCompleted = true;
+    clearInterval(timerInterval);
+    releaseWakeLock();
+    localStorage.removeItem('serenity_session');
+    playBell();
+    setTimeout(showCompletion, 800);
+  }
+}
+
+// Recover session if user left and came back
+function checkPendingSession() {
+  const raw = localStorage.getItem('serenity_session');
+  if (!raw) return;
+  try {
+    const { startISO, targetSec } = JSON.parse(raw);
+    const start   = new Date(startISO);
+    const elapsed = (Date.now() - start.getTime()) / 1000;
+
+    if (elapsed >= targetSec) {
+      // Already finished while away
+      localStorage.removeItem('serenity_session');
+      const actualMin = Math.round(targetSec / 60);
+      sessionStartTime = start;
+      sessionTargetSec = targetSec;
+      playBell();
+      showCompletionWith(actualMin);
+    } else {
+      // Still in progress — resume
+      sessionStartTime = start;
+      sessionTargetSec = targetSec;
+      sessionCompleted = false;
+      selectedMin = Math.round(targetSec / 60);
+      showPage('page-session');
+      requestWakeLock();
+      timerInterval = setInterval(tick, 500);
+    }
+  } catch(e) {
+    localStorage.removeItem('serenity_session');
+  }
+}
+
+// Detect returning to foreground (visibility change)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && sessionStartTime && !sessionCompleted) {
+    // Force immediate tick to snap display to correct time
+    tick();
+  }
+});
+
+function updateSessionDisplay(sec) {
+  const m = Math.floor(Math.max(sec,0) / 60).toString().padStart(2, '0');
+  const s = (Math.max(sec,0) % 60).toString().padStart(2, '0');
+  document.getElementById('session-display').textContent = m + ':' + s;
+}
+
+function updateSessionRing(pct) {
+  const circumference = 628;
+  const offset = circumference - (circumference * Math.min(pct, 1));
+  document.getElementById('session-ring-prog').style.strokeDashoffset = offset;
+}
+
+function endSessionEarly() {
+  if (!confirm('確定要提早結束靜坐嗎？')) return;
+  clearInterval(timerInterval);
+  releaseWakeLock();
+  localStorage.removeItem('serenity_session');
+  const elapsed = sessionStartTime ? (Date.now() - sessionStartTime.getTime()) / 1000 : 0;
+  const actualMin = Math.floor(elapsed / 60);
+  if (actualMin >= 1) {
+    showCompletionWith(actualMin);
+  } else {
+    showPage('page-home');
+  }
+}
+
+function showCompletion() {
+  showCompletionWith(selectedMin);
+}
+function showCompletionWith(min) {
+  document.getElementById('comp-dur').textContent = min;
+  document.getElementById('completion-overlay').classList.add('show');
+  // store for saving
+  document.getElementById('completion-overlay').dataset.min = min;
+}
+
+function confirmComplete() {
+  const min = parseInt(document.getElementById('completion-overlay').dataset.min);
+  appendLog({
+    date: sessionStartTime ? sessionStartTime.toISOString() : new Date().toISOString(),
+    minutes: min
+  });
+  document.getElementById('completion-overlay').classList.remove('show');
+  showPage('page-history');
+}
+
+// ──────────────────────────────────────────
+//  Habit Tracker — monthly calendar
+// ──────────────────────────────────────────
+let trackerYear  = new Date().getFullYear();
+let trackerMonth = new Date().getMonth(); // 0-indexed
+
+function renderHistory() {
+  renderTracker(trackerYear, trackerMonth);
+}
+
+function changeMonth(delta) {
+  trackerMonth += delta;
+  if (trackerMonth > 11) { trackerMonth = 0; trackerYear++; }
+  if (trackerMonth < 0)  { trackerMonth = 11; trackerYear--; }
+  renderTracker(trackerYear, trackerMonth);
+}
+
+function renderTracker(year, month) {
+  const log     = loadLog();
+  const card    = document.getElementById('tracker-card');
+  const today   = new Date();
+  const isToday = (d) => d.getFullYear()===today.getFullYear() && d.getMonth()===today.getMonth() && d.getDate()===today.getDate();
+
+  // Build lookup: "YYYY-M-D" → total minutes
+  const dayMap = {};
+  log.forEach(e => {
+    const d = new Date(e.date);
+    const k = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    dayMap[k] = (dayMap[k] || 0) + e.minutes;
+  });
+
+  // Stats
+  const totalMin  = log.reduce((a,b) => a + b.minutes, 0);
+  const streak    = calcStreak(log);
+  const monthDays = new Date(year, month+1, 0).getDate();
+  const monthDone = [...Array(monthDays)].filter((_,i) => dayMap[`${year}-${month}-${i+1}`]).length;
+
+  // Month label
+  const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  const monthLabel = `${year} · ${monthNames[month]}`;
+
+  // Calendar grid
+  const firstDow = new Date(year, month, 1).getDay(); // 0=Sun
+  const wdLabels = ['日','一','二','三','四','五','六'];
+  const wdClasses= ['sun','','','','','','sat'];
+
+  let cells = '';
+  // Leading empty cells
+  for (let i = 0; i < firstDow; i++) cells += `<div class="cal-cell empty"></div>`;
+  // Day cells
+  for (let d = 1; d <= monthDays; d++) {
+    const key  = `${year}-${month}-${d}`;
+    const mins = dayMap[key] || 0;
+    const done = mins > 0;
+    const dow  = new Date(year, month, d).getDay();
+    const date = new Date(year, month, d);
+    const todayClass = isToday(date) ? 'today' : '';
+    const dowClass   = dow===0 ? 'sun' : dow===6 ? 'sat' : '';
+    const doneClass  = done ? 'done' : '';
+
+    if (done) {
+      cells += `
+        <div class="cal-cell ${doneClass} ${todayClass} ${dowClass}">
+          <div class="cal-day-num">${d}</div>
+          <div class="cal-min-stamp">${mins}</div>
+          <div class="cal-min-unit">分</div>
+        </div>`;
+    } else {
+      cells += `
+        <div class="cal-cell ${todayClass} ${dowClass}">
+          <div class="cal-day-num">${d}</div>
+        </div>`;
+    }
+  }
+
+  const emptyBlock = log.length === 0 ? `
+    <div class="tracker-empty">
+      <div class="tracker-empty-icon">🪷</div>
+      完成第一次靜坐後<br>紀錄將蓋章於此
+    </div>` : '';
+
+  card.innerHTML = `
+    <div class="tracker-head">
+      <div class="tracker-title-block">
+        <div class="tracker-en">Daily Meditation</div>
+        <div class="tracker-zh">靜坐紀錄</div>
+      </div>
+      <div class="tracker-month-nav">
+        <button class="month-nav-btn" onclick="changeMonth(-1)">‹</button>
+        <div class="tracker-month-label">${monthLabel}</div>
+        <button class="month-nav-btn" onclick="changeMonth(1)">›</button>
+      </div>
+    </div>
+
+    <div class="tracker-stats">
+      <div class="stat-pill">
+        <div class="stat-num">${monthDone}</div>
+        <div class="stat-lbl">本月次數</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-num">${streak}</div>
+        <div class="stat-lbl">連續天數</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-num">${totalMin}</div>
+        <div class="stat-lbl">累計分鐘</div>
+      </div>
+    </div>
+
+    <div class="cal-weekdays">
+      ${wdLabels.map((w,i) => `<div class="cal-wd ${wdClasses[i]}">${w}</div>`).join('')}
+    </div>
+    <div class="cal-grid">${cells}</div>
+    ${emptyBlock}
+
+    <div class="tracker-footer">
+      <div class="streak-badge">
+        <span class="streak-fire">🔥</span>
+        <div>
+          <div class="streak-text">${streak} 天連續</div>
+          <div class="streak-sub">STREAK</div>
+        </div>
+      </div>
+      <div class="tracker-quote">"Gently touch<br>the slow time."</div>
+    </div>
+  `;
+}
+
+function calcStreak(log) {
+  if (!log.length) return 0;
+  const days = [...new Set(log.map(e => new Date(e.date).toDateString()))].map(d => new Date(d));
+  days.sort((a, b) => b - a);
+  let streak = 1;
+  for (let i = 1; i < days.length; i++) {
+    const diff = (days[i-1] - days[i]) / 86400000;
+    if (diff <= 1.5) streak++;
+    else break;
+  }
+  return streak;
+}
+
+// ── Service Worker ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+
+// ── Resume any in-progress session on load ──
+checkPendingSession();
+</script>
+</body>
+</html>
