@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="靜坐" />
-  <title>靜坐 · Serenity</title>
+  <title>靜坐 · meditation</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -593,29 +593,45 @@ const audio = document.getElementById("bell-audio");
 
 function playBell() {
   audio.currentTime = 0;
-  audio.volume = 1;
+  audio.volume = 0; // 從0開始（漸入）
   audio.play();
 
-  // 第5秒開始漸出（7秒結束）
+  // 🔼 漸入（前2秒）
+  const fadeInDuration = 2000;
+  const fadeSteps = 20;
+  const fadeInStepTime = fadeInDuration / fadeSteps;
+
+  let fadeInStep = 0;
+
+  const fadeIn = setInterval(() => {
+    fadeInStep++;
+    audio.volume = Math.min(1, fadeInStep / fadeSteps);
+
+    if (fadeInStep >= fadeSteps) {
+      clearInterval(fadeIn);
+    }
+  }, fadeInStepTime);
+
+  // 🔽 在第15秒開始漸出（總長17秒）
   setTimeout(() => {
-    const fadeDuration = 2000;
-    const fadeSteps = 20;
-    const stepTime = fadeDuration / fadeSteps;
+    const fadeOutDuration = 2000;
+    const fadeOutSteps = 20;
+    const fadeOutStepTime = fadeOutDuration / fadeOutSteps;
 
-    let step = 0;
+    let fadeOutStep = 0;
 
-    const fade = setInterval(() => {
-      step++;
-      audio.volume = Math.max(0, 1 - step / fadeSteps);
+    const fadeOut = setInterval(() => {
+      fadeOutStep++;
+      audio.volume = Math.max(0, 1 - fadeOutStep / fadeOutSteps);
 
-      if (step >= fadeSteps) {
-        clearInterval(fade);
+      if (fadeOutStep >= fadeOutSteps) {
+        clearInterval(fadeOut);
         audio.pause();
         audio.currentTime = 0;
       }
-    }, stepTime);
+    }, fadeOutStepTime);
 
-  }, 5000);
+  }, 15000); // 15秒後開始fade out
 }
 
 // ──────────────────────────────────────────
@@ -669,9 +685,9 @@ function tick() {
   const status = document.getElementById('session-status');
   if (pct < 0.1)       status.textContent = '靜下來，回到呼吸';
   else if (pct < 0.4)  status.textContent = '專注呼吸';
-  else if (pct < 0.7)  status.textContent = '把心收回來';
+  else if (pct < 0.7)  status.textContent = '清楚明白 閉上雙眼';
   else if (pct < 0.9)  status.textContent = '靜心中';
-  else                  status.textContent = '最後時刻，動一動';
+  else                  status.textContent = '找到生命的活水源頭';
 
   if (remaining <= 0 && !sessionCompleted) {
     sessionCompleted = true;
